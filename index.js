@@ -8,6 +8,7 @@ app.use(cookieParser());
 const config = require('./config/key')
 const { User } = require('./models/User');
 const mongoose = require('mongoose')
+const {auth} = require('./middleware/auth') 
 
 mongoose.connect(config.mongoURI)
 .then((res) => console.log("ok!"))
@@ -52,6 +53,19 @@ app.post('/login', (req, res) => {
                 .json({loginSuccess:true, userId:user._id})
             })
         })
+    })
+})
+
+app.get('/api/user/auth', auth, (req, res) =>{
+    res.status(200).json({
+        _id:req.user._id,
+        isAdmin:req.user.role === 0 ? false : true,
+        isauth: true,
+        email:req.user.email,
+        name:req.user.name,
+        lastname:req.user.lastname,
+        role:req.user.role,
+        image:req.user.image
     })
 })
 
