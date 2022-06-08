@@ -1,16 +1,18 @@
 const express = require('express')
 const app = express()
 const port = 4000
-const cookieParser = require("cookie-parser");
-app.use(express.json());
-app.use(cookieParser());
-// app.use(express.urlencoded({extended:true}));
+const cookieParser = require('cookie-parser');
 const config = require('./config/key')
 const { User } = require('./models/User');
 const mongoose = require('mongoose')
 const {auth} = require('./middleware/auth') 
+app.use(express.urlencoded({extended:true}));
+app.use(express.json());
+app.use(cookieParser());
 
 mongoose.connect(config.mongoURI)
+
+
 .then((res) => console.log("ok!"))
 .catch((error) => console.log(error))
 
@@ -44,29 +46,40 @@ app.post('/login', (req, res) => {
                 return res.json({loginSuccess:false,message:"비밀번호가 틀렸습니다."});
             };
             //비밀번호가 일치하다면 token생성
-            user.generateToken((err, user) =>{
-                if(err) return res.status(400).send(err);
-
-                //토큰을 쿠키에 저장
+            user.generateToken((err, user) => {
+                if (err) return res.status(400).send(err);
+        
+                // 토큰을 저장한다.  어디에 ?  쿠키 , 로컳스토리지 
                 res.cookie("x_auth", user.token)
-                .status(200)
-                .json({loginSuccess:true, userId:user._id})
-            })
+                  .status(200)
+                  .json({ loginSuccess: true, userId: user._id })
+              })
         })
     })
 })
 
 app.get('/api/user/auth', auth, (req, res) =>{
     res.status(200).json({
-        _id:req.user._id,
-        isAdmin:req.user.role === 0 ? false : true,
-        isauth: true,
-        email:req.user.email,
-        name:req.user.name,
-        lastname:req.user.lastname,
-        role:req.user.role,
-        image:req.user.image
-    })
+        _id: req.user._id,
+        isAdmin: req.user.role === 0 ? false : true,
+        isAuth: true,
+        email: req.user.email,
+        name: req.user.name,
+        lastname: req.user.lastname,
+        role: req.user.role,
+        image: req.user.image
+      })
+})
+
+app.get('/api/user/logout', auth, (req, res) =>{
+    User.findOneAndUpdate({ _id: req.user._id },
+        { token: "" }
+        , (err, user) => {
+          if (err) return res.json({ success: false, err });
+          return res.status(200).send({
+            success: true
+          })
+        })
 })
 
 app.listen(port, () => {
